@@ -444,6 +444,11 @@ class Badfish:
         status = _response.status
         if status == 401:
             raise BadfishException(f"Failed to authenticate. Verify your credentials for {self.host}")
+        if status == 404:
+            # Session service not supported; fall back to HTTP basic auth
+            self.logger.debug("Session service not available, falling back to basic auth")
+            self.http_client.use_basic_auth = True
+            return None
         if status not in [200, 201]:
             raise BadfishException(f"Failed to communicate with {self.host}")
 
@@ -2984,9 +2989,8 @@ def main(argv=None):
     multi_host = True if host_list else False
     result = True
     output = _args["output"]
-    bfl = BadfishLogger(_args["verbose"], multi_host, _args["log"], output)
-
     console = Console()
+    bfl = BadfishLogger(_args["verbose"], multi_host, _args["log"], output, console=console)
     progress_disabled = bool(output) or multi_host or bool(_args["log"]) or not console.is_terminal
 
     try:
